@@ -1,0 +1,14 @@
+{
+  "name": "opencode-usage",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "files": [
+    "plugins"
+  ],
+  "dependencies": {
+    "@opencode-ai/plugin": "1.14.22",
+    "@opentui/solid": "^0.2.2",
+    "solid-js": "^1.9.12"
+  }
+}

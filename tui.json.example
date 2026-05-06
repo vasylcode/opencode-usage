@@ -1,0 +1,6 @@
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "plugin": [
+    "/path/to/opencode-usage/plugins/opencode-usage.tsx"
+  ]
+}
