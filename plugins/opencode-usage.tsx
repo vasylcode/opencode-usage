@@ -16,6 +16,7 @@ type Auth = {
 type WindowInfo = {
   usedPercent: number
   resetsAt: number | null
+  windowSeconds: number | null
 }
 
 type UsageInfo = {
@@ -43,10 +44,13 @@ function asWindow(value: unknown) {
   const data = value as Record<string, unknown>
   const usedPercent = typeof data.used_percent === "number" ? data.used_percent : data.usedPercent
   const resetsAt = typeof data.reset_at === "number" ? data.reset_at : data.resetsAt
+  const windowSeconds =
+    typeof data.limit_window_seconds === "number" ? data.limit_window_seconds : data.windowSeconds
   if (typeof usedPercent !== "number") return null
   return {
     usedPercent,
     resetsAt: typeof resetsAt === "number" ? resetsAt : null,
+    windowSeconds: typeof windowSeconds === "number" ? windowSeconds : null,
   }
 }
 
@@ -90,6 +94,29 @@ function formatRemaining(resetsAt: number | null, now: number) {
   return `${minutes}m`
 }
 
+function formatWeeklyPace(window: WindowInfo, now: number) {
+  if (!window.resetsAt) return ""
+
+  const duration = (window.windowSeconds ?? 7 * 24 * 60 * 60) * 1000
+  if (duration <= 0) return ""
+
+  const timeUntilReset = window.resetsAt * 1000 - now
+  if (timeUntilReset <= 0 || timeUntilReset > duration) return ""
+
+  const elapsed = Math.min(Math.max(duration - timeUntilReset, 0), duration)
+  if (elapsed === 0 && window.usedPercent > 0) return ""
+
+  const expectedUsedPercent = Math.min(Math.max((elapsed / duration) * 100, 0), 100)
+  if (expectedUsedPercent < 3) return ""
+
+  const actualUsedPercent = Math.min(Math.max(window.usedPercent, 0), 100)
+  const delta = actualUsedPercent - expectedUsedPercent
+  const rounded = Math.round(Math.abs(delta))
+  if (rounded <= 2) return ""
+
+  return delta < 0 ? ` +${rounded}%` : ` -${rounded}%`
+}
+
 function View(props: { theme: { textMuted: unknown } }) {
   const [usage, setUsage] = createSignal<UsageInfo>()
   const [now, setNow] = createSignal(Date.now())
@@ -114,7 +141,7 @@ function View(props: { theme: { textMuted: unknown } }) {
     const primary = current?.primary
     const secondary = current?.secondary
     if (!primary || !secondary) return
-    return `${100 - primary.usedPercent}% (${formatRemaining(primary.resetsAt, now())}) ${100 - secondary.usedPercent}% (${formatRemaining(secondary.resetsAt, now())})`
+    return `${100 - primary.usedPercent}% (${formatRemaining(primary.resetsAt, now())}) ${100 - secondary.usedPercent}% (${formatRemaining(secondary.resetsAt, now())})${formatWeeklyPace(secondary, now())}`
   })
 
   return (
